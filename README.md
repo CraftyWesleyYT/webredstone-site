@@ -1,4 +1,4 @@
-# WebRedstone Minefort Edition 2.1 â€” Paper 26.2
+# WebRedstone Minefort Edition 2.1 - Paper 26.2
 
 A Minecraft Paper 26.2 plugin that controls a redstone block from a separately hosted HTML website using an outbound-only HTTPS Cloudflare Worker relay. No extra Minefort port, no RCON, and no Minecraft client mods.
 
