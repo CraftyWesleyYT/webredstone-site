@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<title>WebRedstone • Control Panel</title>
+<style>
+  :root{--bg:#0e1419;--panel:#172229;--border:#3b555a;--text:#ecf4e9;--muted:#b2c6c5;--green:#90f9ae;--red:#ff726b;--gold:#f5d780;--pixel:8px}
+  *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background:radial-gradient(ellipse at 50% -30%,#28413a,#0e1419 65%);display:grid;place-items:center;padding:28px 14px}
+  .layout{width:min(780px,100%)}header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px} .brand{display:flex;align-items:center;gap:12px}.mark{width:48px;height:48px;display:grid;place-items:center;background:#335c3d;border:3px solid #8bd490;box-shadow:4px 4px #071a11;font-size:25px}.head-title{margin:0;font-size:clamp(22px,5vw,30px);letter-spacing:-1.2px}.sub{font-size:12px;font-weight:700;color:#b1e8c2;letter-spacing:.18em;text-transform:uppercase}
+  .panel{border:2px solid #4a6860;background:linear-gradient(150deg,#1c3030 0%,#121c22 100%);box-shadow:8px 8px 0 #060c10,0 0 90px #08211b7d;border-radius:4px;overflow:hidden}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;border-bottom:1px solid #40605b;background:#18262a}.pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.dot{width:10px;height:10px;border-radius:50%;background:#7c8288;box-shadow:0 0 0 3px #3a4147}.dot.online{background:var(--green);box-shadow:0 0 12px #5dff9366}.dot.offline{background:#f5ab72;box-shadow:0 0 8px #f5ab7266}.flag{color:#b8d5ca;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+  .inside{padding:clamp(18px,4vw,32px)}.hidden{display:none!important} h2{margin:0 0 10px;font-size:26px}.hint{color:var(--muted);font-size:14px;line-height:1.55} label{display:block;color:#d4e8d9;font-size:13px;font-weight:700;margin:24px 0 8px}.formrow{display:flex;gap:10px;flex-wrap:wrap}input{flex:1;min-width:190px;padding:13px 14px;background:#0b161d;border:2px solid #4c665f;color:#fff;border-radius:3px;font:inherit}input:focus{outline:2px solid #96f4a1;outline-offset:2px}button{font:inherit;font-weight:800;cursor:pointer;transition:transform .12s,filter .12s,background .12s;border-radius:3px}button:hover{filter:brightness(1.13)}button:focus-visible{outline:3px solid #fff;outline-offset:3px}button:active{transform:translateY(2px)}button:disabled{cursor:not-allowed;opacity:.55;filter:grayscale(.25)}.primary{background:#69c989;border:2px solid #a3fcc0;color:#082110;padding:12px 20px;box-shadow:3px 3px 0 #1b5036}.danger{background:#963a3d;color:white;border:2px solid #e98c8e;padding:12px 20px;box-shadow:3px 3px 0 #43151b}.ghost{background:#2b4141;color:#def3e3;border:2px solid #5b7b71;padding:10px 16px}.error{margin-top:12px;color:#ffaaa4;min-height:22px;font-size:14px}
+  .controls{display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:22px}.blockwrap{text-align:center;padding:28px 8px 16px}.blockbutton{position:relative;background:transparent;border:none;width:210px;height:202px;margin:0 auto;display:block;filter:drop-shadow(0 18px 14px #0009);transition:filter .2s,transform .12s}.blockbutton:hover{transform:translateY(-4px)}.blockbutton:active{transform:translateY(1px)}.blockbutton::after{content:"";position:absolute;bottom:-12px;left:26px;width:168px;height:22px;background:#040a0b6d;filter:blur(8px);z-index:-1}.cube{display:block;position:absolute;inset:25px 20px 20px;transform:rotate(-1deg)}.face{position:absolute;image-rendering:pixelated;border:3px solid #10151b;box-shadow:inset 0 0 0 7px #10151b44}.front{width:142px;height:143px;left:12px;top:30px;clip-path:polygon(0 0,100% 19%,100% 100%,0 79%);background-color:#7d4b47;background-image:linear-gradient(27deg,transparent 10%,#c84444 10% 17%,transparent 17% 35%,#e2665a 35% 44%,transparent 44% 54%,#932a30 54% 60%,transparent 60%),repeating-linear-gradient(90deg,#4d2924 0 15px,#6a3732 15px 30px,#8d4c41 30px 45px);background-blend-mode:screen,normal}.side{width:42px;height:138px;left:152px;top:43px;clip-path:polygon(0 0,100% -12%,100% 80%,0 100%);transform:skewY(-22deg);transform-origin:top left;background:repeating-linear-gradient(0deg,#632a24 0 13px,#9c4038 13px 24px)}.top{width:142px;height:51px;left:12px;top:9px;clip-path:polygon(0 25%,62% 0,100% 72%,39% 100%);background:repeating-linear-gradient(90deg,#8f534a 0 13px,#ba6a5d 13px 26px,#8f534a 26px 35px)}.powered .front{filter:brightness(1.4) saturate(1.6);box-shadow:inset 0 0 30px #ff2d55bb,0 0 20px #ef545e7a}.powered .side,.powered .top{filter:brightness(1.5)}.blockcap{display:block;margin:4px 0 2px;font-size:14px;font-weight:800;letter-spacing:.06em}.actionrow{display:flex;gap:10px;justify-content:center;margin-top:18px}.actionrow button{min-width:85px}.bigstate{font-size:32px;font-weight:900;margin:14px 0 4px;line-height:1.1}.bigstate.on{color:var(--green)}.bigstate.off{color:#ffaea2}.details{display:grid;gap:13px;margin-top:15px}.detail{background:#0f1b1e;border:1px solid #3e5953;padding:12px 14px}.detail small{display:block;color:#90b3a6;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:11px;margin-bottom:5px}.detail strong{display:block;overflow-wrap:anywhere;font-size:14px}.message{margin-top:17px;padding:12px 14px;background:#122a2a;border-left:3px solid #78bba0;color:#d1e6dd;min-height:45px;font-size:13px}.bottom{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;align-items:center;margin-top:19px;border-top:1px solid #385451;padding-top:15px}.meta{font-size:12px;color:#9bb6aa}.note{margin-top:22px;color:#8fa7a4;font-size:12px;line-height:1.5}.wait{color:var(--gold)}
+  @media(max-width:590px){.controls{grid-template-columns:1fr}.details{grid-template-columns:1fr 1fr}.blockwrap{padding:8px 0 10px}.topline{padding:12px 15px}.flag{display:none}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <header><div class="brand"><div class="mark" aria-hidden="true">◆</div><div><h1 class="head-title">WebRedstone</h1><div class="sub">Minefort Edition · v2.1</div></div></div><span class="flag">Remote redstone control</span></header>
+  <main class="panel">
+    <div class="topline"><span class="pill"><span id="serverDot" class="dot" aria-hidden="true"></span><span id="serverLabel">Not connected</span></span><span class="flag">Encrypted relay</span></div>
+    <section id="login" class="inside"><h2>Connect to Minecraft</h2><p class="hint">Enter the <strong>website control key</strong> you configured as <code>ADMIN_KEY</code> in Cloudflare. Your key stays in this browser tab and is not included in the website code.</p>
+      <form id="loginForm"><label for="key">Control key</label><div class="formrow"><input id="key" type="password" required minlength="24" autocomplete="off" spellcheck="false" placeholder="Paste your private control key"><button class="primary" id="loginButton" type="submit">Connect</button></div></form><p class="error" id="loginError" role="alert"></p>
+    </section>
+    <section id="dashboard" class="inside hidden" aria-label="Redstone controls">
+      <div class="controls"><div class="blockwrap">
+        <button class="blockbutton" id="blockToggle" aria-label="Toggle redstone signal" title="Toggle redstone signal" type="button"><span class="cube" id="cube"><span class="face top"></span><span class="face front"></span><span class="face side"></span></span></button>
+        <span class="blockcap">CLICK THE BLOCK TO TOGGLE</span>
+        <div class="actionrow"><button id="onButton" class="primary" type="button">POWER ON</button><button id="offButton" class="danger" type="button">POWER OFF</button></div>
+      </div><div><div class="sub">Live in-game status</div><div class="bigstate" id="powerState" aria-live="polite">UNKNOWN</div><p id="pending" class="hint">Waiting for the plugin's first update.</p>
+        <div class="details"><div class="detail"><small>Bound block</small><strong id="location">Not yet reported</strong></div><div class="detail"><small>Last plugin contact</small><strong id="lastSeen">Never</strong></div></div></div></div>
+      <div class="message" id="message" role="status">Connect and select a redstone block in Minecraft using /wr bind.</div>
+      <div class="bottom"><div class="meta">Website → Cloudflare HTTPS → Minefort plugin</div><div><button class="ghost" id="refreshButton" type="button">↻ Refresh</button> <button class="ghost" id="logoutButton" type="button">Disconnect</button></div></div>
+    </section>
+  </main>
+  <p class="note">This page can show a queued command while the Minecraft server is asleep. A signal changes only after the Minefort server is running and its plugin acknowledges the command. Never publish your control or device keys.</p>
+</div>
+<script>
+'use strict';
+// REQUIRED: Replace this once with YOUR deployed Cloudflare Worker URL.
+// Example: 'https://webredstone-yourname.workers.dev'
+const RELAY_URL = 'https://REPLACE-ME.workers.dev';
+const $ = id => document.getElementById(id);
+let controlKey = '';
+let status = null;
+let busy = false;
+let cooldownUntil = 0;
+const configured = /^https:\/\/[^/]+\.[^/]+/.test(RELAY_URL) && !RELAY_URL.includes('REPLACE-ME');
+
+function showError(message) { $('loginError').textContent = message; }
+async function api(path, options = {}) {
+  if (!configured) throw new Error('First edit RELAY_URL in index.html to your Cloudflare Worker URL.');
+  const response = await fetch(RELAY_URL.replace(/\/+$/, '') + path, {
+    method: options.method || 'GET', mode: 'cors', cache: 'no-store',
+    headers: { Authorization: 'Bearer ' + controlKey, ...(options.body ? {'Content-Type':'application/json'} : {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  let data = {};
+  try { data = await response.json(); } catch (_) {}
+  if (!response.ok) throw new Error(data.error || ('Request failed: HTTP ' + response.status));
+  return data;
+}
+function buttons() {
+  const block = busy || Date.now() < cooldownUntil;
+  for(const id of ['onButton','offButton','blockToggle']) $(id).disabled = block;
+}
+async function doPower(on) {
+  if (busy || Date.now() < cooldownUntil) return;
+  busy = true; buttons();
+  $('message').textContent = 'Sending ' + (on ? 'ON' : 'OFF') + ' command to the relay…';
+  try {
+    await api('/api/power', { method: 'POST', body: { on } });
+    cooldownUntil = Date.now() + 1800; // KV allows one write per key per second.
+    $('message').textContent = 'Command queued. Waiting for Minecraft to acknowledge…';
+    await refresh();
+  } catch (error) { $('message').textContent = error.message; }
+  finally { busy = false; buttons(); setTimeout(buttons, 1850); }
+}
+function draw(data) {
+  status = data;
+  $('serverDot').className = 'dot ' + (data.online ? 'online' : 'offline');
+  $('serverLabel').textContent = data.online ? 'Plugin connected' : 'Plugin offline or waiting';
+  $('powerState').textContent = data.actual === true ? 'POWERED ON' : data.actual === false ? 'POWERED OFF' : 'UNKNOWN';
+  $('powerState').className = 'bigstate ' + (data.actual === true ? 'on' : 'off');
+  $('cube').classList.toggle('powered', data.actual === true);
+  $('pending').textContent = data.pending
+    ? 'Command pending: ' + (data.desired ? 'ON' : 'OFF') + (data.online ? ' · delivery in progress' : ' · server not responding')
+    : data.online ? (data.ok ? 'Server acknowledged the latest state.' : 'Plugin needs attention.') : 'The server may be sleeping or unreachable.';
+  $('pending').className = data.pending ? 'hint wait' : 'hint';
+  $('location').textContent = data.location || 'Use /wr bind in Minecraft';
+  $('lastSeen').textContent = data.lastSeen ? new Date(data.lastSeen).toLocaleString() : 'Never';
+  $('message').textContent = data.message || 'No message';
+}
+async function refresh() {
+  if (!controlKey) return;
+  try { draw(await api('/api/status')); }
+  catch(error) { $('serverDot').className='dot offline';$('serverLabel').textContent='Relay connection failed'; $('message').textContent=error.message; }
+}
+$('loginForm').addEventListener('submit', async event => {
+  event.preventDefault(); showError('');
+  controlKey = $('key').value.trim();
+  $('loginButton').disabled = true;
+  try {
+    await api('/api/auth', { method:'POST' });
+    $('key').value = '';
+    $('login').classList.add('hidden');
+    $('dashboard').classList.remove('hidden');
+    await refresh();
+  } catch(error) { controlKey='';showError(error.message + (location.protocol==='file:' ? ' Host index.html over HTTPS, not file://.' : '')); }
+  finally { $('loginButton').disabled = false; }
+});
+$('onButton').addEventListener('click', () => doPower(true));
+$('offButton').addEventListener('click', () => doPower(false));
+$('blockToggle').addEventListener('click', () => doPower(!(status?.desired ?? status?.actual ?? false)));
+$('refreshButton').addEventListener('click', refresh);
+$('logoutButton').addEventListener('click', () => {controlKey='';status=null;$('dashboard').classList.add('hidden');$('login').classList.remove('hidden');$('serverDot').className='dot';$('serverLabel').textContent='Not connected';});
+setInterval(() => { if (controlKey && !document.hidden) refresh(); }, 8000);
+if (!configured) showError('Setup needed: edit RELAY_URL in this file first.');
+</script>
+</body>
+</html>
