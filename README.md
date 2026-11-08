@@ -1,84 +1,61 @@
-# WebRedstone Minefort Edition 2.1 - Paper 26.2
+# WebRedstone Minefort Edition 2.2 FAST - Paper 26.2 / Java 25
 
-A Minecraft Paper 26.2 plugin that controls a redstone block from a separately hosted HTML website using an outbound-only HTTPS Cloudflare Worker relay. No extra Minefort port, no RCON, and no Minecraft client mods.
+A faster and much clearer version of WebRedstone. **This is a source project, not an already built official Paper JAR.**
 
-## Changes in 2.1
+## Why the old version sometimes needed 30 seconds
 
-- **Paper 26.2 target**, pinned to official `io.papermc.paper:paper-api:26.2.build.135-stable`.
-- **Java 25** required to compile and run (Paper 26.2 also requires Java 25).
-- `plugin.yml` declares `api-version: '26.2'` and plugin version `2.1.0`.
-- Added `.github/workflows/build-paper-26-2.yml` to automatically build the *real* Paper-API JAR on GitHub Actions. No local Java installation required.
-- Website design and endpoints remain the same; Cloudflare relay remains compatible. Website's version label changes to v2.1.
+WebRedstone 2.1 stored `desired` and `ack` in Cloudflare Workers KV. KV is eventually consistent across different Cloudflare regions; changes can take 60 seconds or more to propagate to places which recently read an old value. Minefort's plugin and the browser often connect from different regions. Polling KV every second would *not* fix the fundamental stale-read problem.
 
-## IMPORTANT: Build status
+**2.2 FAST** uses one **SQLite-backed Cloudflare Durable Object**. The website and Minecraft both talk to the same strongly consistent state. The plugin polls every **2 seconds**, and the website refreshes faster while a command is pending. We aim for roughly 2â€“5 seconds in normal conditions (not a guaranteed deadline).
 
-This package contains **source, not a verified 26.2 JAR**. This environment has Java 21 and cannot download Paper's dependency, so the official Paper 26.2 compile and live-server checks could not be completed here. **Build the JAR with the provided GitHub Actions workflow (Java 25 + official Paper API) before installing.** If the workflow fails, do not deploy; inspect and address the build error. Cloudflare Worker unit tests can run without Paper and are described below.
+Cloudflare Durable Objects are supported on Cloudflare Workers Free plans with usage limits. At the default 2-second poll, one continuously running Minecraft server produces approximately 43,200 poll requests/day; 7.5-second idle website refreshes add approximately 11,520 requests/day per continuously open tab. Multiple tabs/servers can exceed the free tier. Check limits in your Cloudflare dashboard.
 
-Minefort support for outbound HTTPS plugin requests has not been demonstrated on a live server, and the hosting provider may not expose Paper 26.2/Java 25 as an available choice on every server plan. Confirm both before installing.
+## What is in the ZIP
 
-## Files
+- `website/index.html` â€” Minecraft-styled website with clear ON, OFF, pending and confirmed states.
+- `relay-fast/worker.js`, `router.js`, `room.js`, `state-core.js` â€” NEW secure fast relay.
+- `relay-fast/wrangler.jsonc` â€” sets Worker name `webredstone-fast`, allowed website origin and SQLite Durable Object `ROOM`. This automatically provisions the binding through a Wrangler deployment.
+- `relay-fast/package.json` â€” Wrangler tool for deployment.
+- `src/main/java/...` â€” updated Paper plugin, keeps `/wr bind`, `/wr status`, `/wr on`, `/wr off`.
+- `.github/workflows/build-paper-26-2.yml` â€” official Paper 26.2 / Java 25 build workflow.
+- `tests/fast-relay.test.mjs` â€” new relay tests, alongside previous KV relay tests.
+- `UPGRADE-STEPS.md` â€” complete step-by-step upgrade and rollback.
 
-| File | Purpose |
-|---|---|
-| `website/index.html` | Complete website with CSS/JS, safe for GitHub Pages once the relay URL is configured |
-| `relay/worker.js` | Cloudflare Worker API for authenticated ON/OFF actions and device polling |
-| `src/main/java/com/craftyweb/minefort/WebRedstoneMinefortPlugin.java` | Paper plugin source |
-| `src/main/resources/config.yml` | Default plugin settings |
-| `src/main/resources/plugin.yml` | Plugin metadata and permissions |
-| `pom.xml` | Paper 26.2 dependency and Java 25 Maven build |
-| `.github/workflows/build-paper-26-2.yml` | One-click GitHub Actions JAR build |
-| `tests/relay.test.mjs` | Unit tests for the relay |
+## VERY IMPORTANT: preserve your working 2.1 while upgrading
 
-## How to get the actual JAR (no Java install on your PC)
+Do **not** edit or delete your current Cloudflare Worker `webredstone` or its KV namespace. The new relay deploys as a **second Worker** called `webredstone-fast`, so you can fall back if anything goes wrong. Its public URL should be:
 
-1. On GitHub create a **private** repository with a README. Unzip this project on your PC.
-2. Upload **the contents** of this folder to the repository root, including `.github/workflows/build-paper-26-2.yml`. Keep the `src/`, `relay/`, `website/`, `tests/` folders and `pom.xml` directly under the root. Uploading only the ZIP itself will **not** run the workflow.
-3. Go to the repository's **Actions** tab. If GitHub asks, enable workflows for this repository.
-4. Select **Build WebRedstone for Paper 26.2** â†’ **Run workflow** â†’ choose `main` â†’ **Run workflow**. It will also run after pushes to `main`.
-5. Open the completed run. Verify the Java build shows success and the **Test Cloudflare relay** step passes.
-6. In the run's **Artifacts** section, download `WebRedstone-Minefort-Paper26.2` and extract it. It contains `WebRedstone-Minefort-2.1.0-Paper26.2.jar`.
-7. If any step fails, the ZIP is not ready for installation. Read the action log; do not substitute the older experimental 2.0 JAR.
+`https://webredstone-fast.creatorwes.workers.dev`
 
-Alternative: In Codespaces with a **Java 25 JDK** and Maven installed, run `mvn -U clean package` in the directory containing `pom.xml`; then download `target/WebRedstone-Minefort-2.1.0-Paper26.2.jar`. Java 21 cannot build this release.
+You can use the **same** existing ADMIN_KEY and DEVICE_KEY as the old Worker, but they need to be entered again as secrets on the **new** Worker. Never place either key in GitHub files or in `website/index.html`.
 
-## Cloudflare setup (same as 2.0)
+See `UPGRADE-STEPS.md` for the steps.
 
-1. Generate **two separate random secret values** of 32 bytes or more; label them `ADMIN_KEY` and `DEVICE_KEY`. In Codespaces you can run twice: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
-2. Deploy the whole `relay/worker.js` as a Cloudflare Worker. Create a Workers KV namespace (any display name) and bind it to the Worker under the exact binding name **`STATE`**.
-3. Set Worker secrets `ADMIN_KEY` and `DEVICE_KEY` to the two different generated values. Set text variable `ALLOWED_ORIGIN` to the **origin** of your website, e.g. `https://YOUR-NAME.github.io`, not the URL path.
-4. Deploy settings. Confirm `https://YOUR-WORKER.workers.dev/health` responds with `"ok": true`.
-5. Edit only the `RELAY_URL` constant in `website/index.html` and replace `https://REPLACE-ME.workers.dev` with your exact deployed Worker URL. Never put either secret into HTML/JavaScript.
-6. Host `index.html` on an HTTPS site (e.g. GitHub Pages). For GitHub Pages, create a public repo with only `index.html` at its root; enable Settings â†’ Pages â†’ Deploy from branch â†’ main/root. Keep the plugin repository private.
+## Configuration after upgrading
 
-**Existing installation of 2.0?** Keep your already deployed Worker, KV namespace, two keys and published website. They still work with 2.1. You can optionally publish the updated v2.1 website label; no endpoint changes are required.
-
-## Install/upgrade on Minefort
-
-1. Back up your world. Paper warns that upgrading a world to 26.2 cannot be reversed by simply downgrading the server.
-2. Confirm the server software is **Paper 26.2** and server Java runtime is **Java 25**. A client connecting with 26.2 does **not** mean the server software is 26.2.
-3. Stop the Minefort server; remove the old `WebRedstone-Minefort` (v2.0) JAR from the plugins directory; keep existing `plugins/WebRedstone/config.yml` (don't delete its real keys/binding). Do not run both JARs together.
-4. Upload the newly compiled `WebRedstone-Minefort-2.1.0-Paper26.2.jar` into the `plugins` folder. Start/restart the server.
-5. On first installation, in `plugins/WebRedstone/config.yml` set:
+In Minefort, edit `plugins/WebRedstone/config.yml` (preserve your existing `block:` section):
 
 ```yaml
 relay:
-  url: 'https://YOUR-WORKER.workers.dev'
-  device-key: 'YOUR_PRIVATE_DEVICE_KEY'
-  poll-seconds: 5
-  heartbeat-seconds: 300
+  url: 'https://webredstone-fast.creatorwes.workers.dev'
+  device-key: 'YOUR_EXISTING_PRIVATE_DEVICE_KEY'
+  poll-seconds: 2
+  heartbeat-seconds: 120
 ```
 
-6. Restart. In the console look for `WebRedstone v2.1.0` and `Outbound-only WebRedstone relay is enabled` (assuming configured). Check for errors about API versions, Java, HTTPS, or HTTP 401.
-7. Join as OP. Look at a solid block with an empty space above it. `/wr bind` reserves the space above; `/wr bind <x> <y> <z>` reserves an empty space at specified coordinates in your world. Place a redstone lamp adjacent to the reserved space.
-8. Run `/wr on`, `/wr off`, `/wr status`. Then log in on your public HTTPS website using `ADMIN_KEY` and toggle power from there.
-9. Remain near the bound block while testing: the plugin **doesn't force-load chunks**, and a sleeping Minefort server won't execute requests until it is running.
+Your GitHub Pages `index.html` needs the same `RELAY_URL` value; the website does NOT contain the DEVICE_KEY. The website asks for ADMIN_KEY when you sign in.
 
-## Security and limits
+Use the new `/health` endpoint to confirm the Worker:
+`https://webredstone-fast.creatorwes.workers.dev/health`
+Expected: JSON with `"ok": true`, `"storage": "durable-object"`.
 
-The public page cannot receive the private keys hardcoded in the file. The Worker enforces the ADMIN_KEY, separates it from DEVICE_KEY, requires the configured browser Origin for control requests, and accepts only ON/OFFâ€”never arbitrary console commands. Protect both keys; rotate them if exposed. The browser holds ADMIN_KEY in memory only while the tab remains active.
+## Tests performed locally
 
-Cloudflare KV is eventually consistent, so updates may be delayed beyond the five-second poll interval. Minefort's outbound HTTPS policy must be tested with your actual server. Use a backup and a disposable redstone circuit for first-time testing.
+- Node.js 22: **35/35** combined old/new relay tests passed.
+- New website JavaScript and Worker source passed JavaScript syntax checks.
+- Not tested live on your Cloudflare account, GitHub Actions runner or Minefort server.
+- The installable Paper JAR must be compiled via GitHub Actions before you upload it.
 
-## Tests
+## Safety design
 
-Relay: `node --test tests/relay.test.mjs` (Node 22+). GitHub Actions also runs this test before building the JAR. **A successful compilation is not proof of Minefort runtime compatibility**; test in a real Paper 26.2 world. See `TESTING.md`.
+Website ADMIN_KEY authenticates ON/OFF changes; device DEVICE_KEY authenticates polling and acknowledgments. Auth secrets are compared using hashed constant-length digests. Only the configured browser `ALLOWED_ORIGIN` can post commands. Server plugin never runs arbitrary website commands; it only places/removes its own reserved redstone block in an already-loaded chunk on the main server thread. No plugin HTTP port is opened.
